@@ -9,14 +9,30 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Esri.ArcGISRuntime.Portal;
 
+using Esri.ArcGISRuntime.Symbology;
+using Esri.ArcGISRuntime.UI;
+using Esri.ArcGISRuntime.Geometry;
+
+using Esri.ArcGISRuntime.Tasks.Offline;
+
+using System.Windows;
+using System.Diagnostics;
+using System.Drawing;
+
+
 namespace DisplayAMap
 {
     internal class MapViewModel : INotifyPropertyChanged
     {
         public MapViewModel()
         {
-            SetupMap();
-        }
+          //  SetupMap();
+            GetOfflinePreplannedMap();
+   //          AccessMap();
+            CreateGraphics();
+            }
+        private string _downloadLocation;
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
@@ -32,24 +48,129 @@ namespace DisplayAMap
                 OnPropertyChanged();
             }
         }
+        private GraphicsOverlayCollection? _graphicsOverlays;
+        public GraphicsOverlayCollection? GraphicsOverlays
+        {
+            get { return _graphicsOverlays; }
+            set
+            {
+                _graphicsOverlays = value;
+                OnPropertyChanged();
+            }
+        }
         private async Task SetupMap()
         {
 
-            //// Create a new map with a 'topographic vector' basemap.
-            //Map = new Map(BasemapStyle.ArcGISTopographic);
-
-            // Create a portal. If a URI is not specified, www.arcgis.com is used by default.
+            // Create a portal pointing to ArcGIS Online.
             ArcGISPortal portal = await ArcGISPortal.CreateAsync();
 
-            // Get the portal item for a web map using its unique item id.
-            PortalItem mapItem = await PortalItem.CreateAsync(portal, "d6896046b9b34086a47da90c53d11882");
+            // Create a portal item for a specific web map id.
+
+            string webMapId = "8b39872525eb43b28a69fba290d16ac8";
+
+            PortalItem mapItem = await PortalItem.CreateAsync(portal, webMapId);
 
             // Create the map from the item.
             Map map = new Map(mapItem);
 
-            // To display the map, set the MapViewModel.Map property, which is bound to the map view.
+            // Set the view model "Map" property.
             this.Map = map;
 
+            // Define area of interest (envelope) to take offline.
+            //EnvelopeBuilder envelopeBldr = new EnvelopeBuilder(SpatialReferences.Wgs84)
+            //{
+            //    XMin = -88.1526,
+            //    XMax = -88.1490,
+            //    YMin = 41.7694,
+            //    YMax = 41.7714
+            //};
+
+            //Envelope offlineArea = envelopeBldr.ToGeometry();
+
+
+        }
+        private async Task GetOfflinePreplannedMap()
+        {
+            var portal = await ArcGISPortal.CreateAsync();
+            var portalItem = await PortalItem.CreateAsync(portal, "8b39872525eb43b28a69fba290d16ac8"); // Replace with your web map ID
+            var map = new Map(portalItem);
+
+            OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
+            IReadOnlyList<PreplannedMapArea> availableAreas = await offlineMapTask.GetPreplannedMapAreasAsync();
+
+            if (availableAreas?.FirstOrDefault() is PreplannedMapArea area)
+            {
+                DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(area);
+
+                //string documentsFolder = "C:\\Work\\DisplayAMap";
+                ////_downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMaps");
+                string documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                _downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMap");
+
+                DownloadPreplannedOfflineMapJob job = offlineMapTask.DownloadPreplannedOfflineMap(downloadParameters, _downloadLocation);
+                DownloadPreplannedOfflineMapResult result = await job.GetResultAsync();
+                if (result?.OfflineMap is Map offlineMap)
+                {
+                    this.Map = offlineMap;
+                }
+            }
+        }
+        private async Task AccessMap()
+        {
+            //string documentsFolder = "C:\\Work\\DisplayAMap\\OfflineMaps\\p13";
+            //_downloadLocation =  System.IO.Path.Combine(documentsFolder, "OfflineMaps");
+
+            string documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            _downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMap");
+
+            var mobileMapPackage = await MobileMapPackage.OpenAsync(_downloadLocation);
+
+            await mobileMapPackage.LoadAsync();
+
+            this.Map = mobileMapPackage.Maps.First();
+
+           
+
+
+        }
+
+        private void CreateGraphics()
+        {
+            // Create a new graphics overlay to contain a variety of graphics.
+            var TAGraphicsOverlay = new GraphicsOverlay();
+
+            // Add the overlay to a graphics overlay collection.
+            GraphicsOverlayCollection overlays = new GraphicsOverlayCollection
+            {
+                TAGraphicsOverlay
+            };
+
+            // Set the view model's "GraphicsOverlays" property (will be consumed by the map view).
+            this.GraphicsOverlays = overlays;
+
+            // Create a point geometry.
+            var TAPoint = new MapPoint(34.7808, 32.0707, SpatialReferences.Wgs84);
+
+            // Create a symbol to define how the point is displayed.
+            var pointSymbol = new SimpleMarkerSymbol
+            {
+                Style = SimpleMarkerSymbolStyle.Circle,
+                Color = System.Drawing.Color.Orange,
+                Size = 10.0
+            };
+
+            // Add an outline to the symbol.
+            pointSymbol.Outline = new SimpleLineSymbol
+            {
+                Style = SimpleLineSymbolStyle.Solid,
+                Color = System.Drawing.Color.Blue,
+                Width = 2.0
+            };
+            // Create a point graphic with the geometry and symbol.
+            var pointGraphic = new Graphic(TAPoint, pointSymbol);
+
+            // Add the point graphic to graphics overlay.
+            TAGraphicsOverlay.Graphics.Add(pointGraphic);
         }
     }
 }
