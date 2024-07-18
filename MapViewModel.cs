@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,26 +18,44 @@ using Esri.ArcGISRuntime.Tasks.Offline;
 using System.Windows;
 using System.Diagnostics;
 using System.Drawing;
-
+using System.IO;
+using Esri.ArcGISRuntime.Data;
+using Esri.ArcGISRuntime.UI.Controls;
 
 namespace DisplayAMap
 {
     internal class MapViewModel : INotifyPropertyChanged
     {
+        //private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMapMED_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+        private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap" );
         public MapViewModel()
         {
-          //  SetupMap();
-            GetOfflinePreplannedMap();
-   //          AccessMap();
-            CreateGraphics();
+            InitializeMap();
+        }
+
+        private async void InitializeMap()
+        {
+            if (true)//OfflineMapExists())
+            {
+                await SetupMap();
+//                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
+                await AccessMap();
             }
-        private string _downloadLocation;
+            else
+            {
+                await SetupMap();
+                await GetOfflinePreplannedMap();
+            }
+            CreateGraphics();
+        }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
         private Map? _map;
         public Map? Map
         {
@@ -48,6 +66,7 @@ namespace DisplayAMap
                 OnPropertyChanged();
             }
         }
+
         private GraphicsOverlayCollection? _graphicsOverlays;
         public GraphicsOverlayCollection? GraphicsOverlays
         {
@@ -58,41 +77,20 @@ namespace DisplayAMap
                 OnPropertyChanged();
             }
         }
+
         private async Task SetupMap()
         {
-
-            // Create a portal pointing to ArcGIS Online.
             ArcGISPortal portal = await ArcGISPortal.CreateAsync();
-
-            // Create a portal item for a specific web map id.
-
             string webMapId = "8b39872525eb43b28a69fba290d16ac8";
-
             PortalItem mapItem = await PortalItem.CreateAsync(portal, webMapId);
-
-            // Create the map from the item.
             Map map = new Map(mapItem);
-
-            // Set the view model "Map" property.
             this.Map = map;
-
-            // Define area of interest (envelope) to take offline.
-            //EnvelopeBuilder envelopeBldr = new EnvelopeBuilder(SpatialReferences.Wgs84)
-            //{
-            //    XMin = -88.1526,
-            //    XMax = -88.1490,
-            //    YMin = 41.7694,
-            //    YMax = 41.7714
-            //};
-
-            //Envelope offlineArea = envelopeBldr.ToGeometry();
-
-
         }
+
         private async Task GetOfflinePreplannedMap()
         {
             var portal = await ArcGISPortal.CreateAsync();
-            var portalItem = await PortalItem.CreateAsync(portal, "8b39872525eb43b28a69fba290d16ac8"); // Replace with your web map ID
+            var portalItem = await PortalItem.CreateAsync(portal, "8b39872525eb43b28a69fba290d16ac8");
             var map = new Map(portalItem);
 
             OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
@@ -101,75 +99,89 @@ namespace DisplayAMap
             if (availableAreas?.FirstOrDefault() is PreplannedMapArea area)
             {
                 DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(area);
-
-                //string documentsFolder = "C:\\Work\\DisplayAMap";
-                ////_downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMaps");
-                string documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                _downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMap");
-
                 DownloadPreplannedOfflineMapJob job = offlineMapTask.DownloadPreplannedOfflineMap(downloadParameters, _downloadLocation);
+                // Start the job
+             //   job.Start();
+
                 DownloadPreplannedOfflineMapResult result = await job.GetResultAsync();
-                if (result?.OfflineMap is Map offlineMap)
+                if (result.HasErrors)
+                {
+                    MessageBox.Show("Error downloading map");
+                }
+                else if (result?.OfflineMap is Map offlineMap)
                 {
                     this.Map = offlineMap;
                 }
             }
         }
+        //private async Task GetOfflinePreplannedMap()
+        //{
+        //    var portal = await ArcGISPortal.CreateAsync();
+        //    var portalItem = await PortalItem.CreateAsync(portal, "8b39872525eb43b28a69fba290d16ac8"); // Replace with your web map ID
+        //    var map = new Map(portalItem);
+
+        //    OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
+        //    IReadOnlyList<PreplannedMapArea> availableAreas = await offlineMapTask.GetPreplannedMapAreasAsync();
+
+        //    if (availableAreas?.FirstOrDefault() is PreplannedMapArea area)
+        //    {
+        //        DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(area);
+
+        //        string documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        //        _downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMap");
+
+        //        DownloadPreplannedOfflineMapJob job = offlineMapTask.DownloadPreplannedOfflineMap(downloadParameters, _downloadLocation);
+        //        DownloadPreplannedOfflineMapResult result = await job.GetResultAsync();
+
+        //        if (result?.OfflineMap is Map offlineMap)
+        //        {
+        //            this.Map = offlineMap;
+        //        }
+        //    }
+        //}
         private async Task AccessMap()
         {
-            //string documentsFolder = "C:\\Work\\DisplayAMap\\OfflineMaps\\p13";
-            //_downloadLocation =  System.IO.Path.Combine(documentsFolder, "OfflineMaps");
+            //var mobileMapPackage = await MobileMapPackage.OpenAsync(_downloadLocation);
+            //await mobileMapPackage.LoadAsync();
+            //this.Map = mobileMapPackage.Maps.First();
+            // Assuming _downloadLocation is the path to your downloaded geodatabase
+            // Assuming _downloadLocation is the path to your downloaded tile package
+            var tileCache = new TileCache(_downloadLocation);
+            var tiledLayer = new ArcGISTiledLayer(tileCache);
 
-            string documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            _downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMap");
+            // Create a new map and add the tiled layer to it
+            var map = new Map();
+            map.Basemap.BaseLayers.Add(tiledLayer);
 
-            var mobileMapPackage = await MobileMapPackage.OpenAsync(_downloadLocation);
+            // Assign the map to your MapView
+            this.Map = map;
+        }
 
-            await mobileMapPackage.LoadAsync();
-
-            this.Map = mobileMapPackage.Maps.First();
-
-           
-
-
+        private bool OfflineMapExists()
+        {
+            return Directory.Exists(_downloadLocation) ;
         }
 
         private void CreateGraphics()
         {
-            // Create a new graphics overlay to contain a variety of graphics.
             var TAGraphicsOverlay = new GraphicsOverlay();
-
-            // Add the overlay to a graphics overlay collection.
-            GraphicsOverlayCollection overlays = new GraphicsOverlayCollection
-            {
-                TAGraphicsOverlay
-            };
-
-            // Set the view model's "GraphicsOverlays" property (will be consumed by the map view).
+            GraphicsOverlayCollection overlays = new GraphicsOverlayCollection { TAGraphicsOverlay };
             this.GraphicsOverlays = overlays;
 
-            // Create a point geometry.
             var TAPoint = new MapPoint(34.7808, 32.0707, SpatialReferences.Wgs84);
-
-            // Create a symbol to define how the point is displayed.
             var pointSymbol = new SimpleMarkerSymbol
             {
                 Style = SimpleMarkerSymbolStyle.Circle,
                 Color = System.Drawing.Color.Orange,
-                Size = 10.0
+                Size = 10.0,
+                Outline = new SimpleLineSymbol
+                {
+                    Style = SimpleLineSymbolStyle.Solid,
+                    Color = System.Drawing.Color.Blue,
+                    Width = 2.0
+                }
             };
-
-            // Add an outline to the symbol.
-            pointSymbol.Outline = new SimpleLineSymbol
-            {
-                Style = SimpleLineSymbolStyle.Solid,
-                Color = System.Drawing.Color.Blue,
-                Width = 2.0
-            };
-            // Create a point graphic with the geometry and symbol.
             var pointGraphic = new Graphic(TAPoint, pointSymbol);
-
-            // Add the point graphic to graphics overlay.
             TAGraphicsOverlay.Graphics.Add(pointGraphic);
         }
     }
