@@ -47,7 +47,7 @@ namespace DisplayAMap
                 await SetupMap();
                 await GetOfflinePreplannedMap();
             }
-            CreateGraphics();
+     //       CreateGraphics();
         }
 
 
@@ -71,7 +71,9 @@ namespace DisplayAMap
         private GraphicsOverlayCollection? _graphicsOverlays;
         public GraphicsOverlayCollection? GraphicsOverlays
         {
-            get { return _graphicsOverlays; }
+            get { 
+                return _graphicsOverlays; 
+            }
             set
             {
                 _graphicsOverlays = value;
@@ -225,7 +227,7 @@ namespace DisplayAMap
         }
 
         // Event handler for map view taps
-        public async void MapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
+        public void MapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
         {
             // Add the tapped point to the polyline builder
             polylineBuilder.AddPoint(e.Location);
@@ -240,10 +242,13 @@ namespace DisplayAMap
                 double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Meters, GeodeticCurveType.Geodesic);
 
                 // Display the distance (you might want to display this in the UI instead)
-                Debug.WriteLine($"Distance: {distance / 1000} km");
+                MessageBox.Show($"Distance: {distance / 1000:F1} km");
 
                 // Optionally, display the polyline on the map by adding it to a GraphicsOverlay
                 var polylineGraphic = new Graphic(polyline);
+                polylineGraphic.IsVisible = true;
+                polylineGraphic.Symbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 20);
+                polylineGraphic.
                 // Assuming you have a GraphicsOverlay named 'graphicsOverlay'
                 CreateGraphics(polylineGraphic);
 
@@ -258,22 +263,32 @@ namespace DisplayAMap
         }
 
         // Modified CreateGraphics to accept a Graphic parameter
-        private void CreateGraphics(Graphic polylineGraphic = null)
+        private void CreateGraphics(Graphic polylineGraphic)
         {
-            var TAGraphicsOverlay = new GraphicsOverlay();
-            if (GraphicsOverlays == null || GraphicsOverlays.Count == 0)
+            // Check if the GraphicsOverlays collection is initialized, if not, initialize it.
+            if (GraphicsOverlays == null)
             {
-                GraphicsOverlayCollection overlays = new GraphicsOverlayCollection { TAGraphicsOverlay };
-                this.GraphicsOverlays = overlays;
+                GraphicsOverlays = new GraphicsOverlayCollection();
+            }
+
+            // Check if there is already a GraphicsOverlay to add the Graphic to, if not, create a new one.
+            GraphicsOverlay TAGraphicsOverlay;
+            if (GraphicsOverlays.Count == 0)
+            {
+                TAGraphicsOverlay = new GraphicsOverlay();
+                GraphicsOverlays.Add(TAGraphicsOverlay);
             }
             else
             {
-                TAGraphicsOverlay = GraphicsOverlays.FirstOrDefault();
+                // Assuming you want to add the new graphic to the first overlay in the collection
+                TAGraphicsOverlay = GraphicsOverlays.First();
             }
 
+            // Add the polylineGraphic to the selected or new GraphicsOverlay
             if (polylineGraphic != null)
             {
                 TAGraphicsOverlay.Graphics.Add(polylineGraphic);
+                TAGraphicsOverlay.IsVisible = true;
             }
         }
     }
