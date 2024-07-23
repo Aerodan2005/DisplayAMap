@@ -207,6 +207,7 @@ namespace DisplayAMap
 
             this.Map = mobileMapPackage.Maps.First();
 
+
         }
         private bool OfflineMapExists()
         {
@@ -237,6 +238,11 @@ namespace DisplayAMap
             {
                 // Create a polyline from the builder
                 Polyline polyline = polylineBuilder.ToGeometry();
+
+            //    var polyline = new Polyline(new MapPoint[] {
+            //    new MapPoint(3400000, 3200000, SpatialReferences.WebMercator),
+            //    new MapPoint(350000, 33000000, SpatialReferences.WebMercator)
+            //});
 
                 // Measure the distance of the polyline
                 double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Meters, GeodeticCurveType.Geodesic);
@@ -288,6 +294,7 @@ namespace DisplayAMap
             {
                 TAGraphicsOverlay.Graphics.Add(polylineGraphic);
                 TAGraphicsOverlay.IsVisible = true;
+                OnPropertyChanged();
             }
         }
     }
