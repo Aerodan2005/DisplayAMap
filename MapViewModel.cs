@@ -248,7 +248,6 @@ namespace DisplayAMap
                 var polylineGraphic = new Graphic(polyline);
                 polylineGraphic.IsVisible = true;
                 polylineGraphic.Symbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 20);
-                polylineGraphic.
                 // Assuming you have a GraphicsOverlay named 'graphicsOverlay'
                 CreateGraphics(polylineGraphic);
 
