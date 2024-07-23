@@ -27,7 +27,7 @@ namespace DisplayAMap
     internal class MapViewModel : INotifyPropertyChanged
     {
         //private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMapMED_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-        private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap" );
+        private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
         public MapViewModel()
         {
             InitializeMap();
@@ -38,7 +38,7 @@ namespace DisplayAMap
             if (true)//OfflineMapExists())
             {
                 await SetupMap();
-//                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
+                //                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
                 await AccessMap();
                 InitializeMeasuringTool();
             }
@@ -47,7 +47,7 @@ namespace DisplayAMap
                 await SetupMap();
                 await GetOfflinePreplannedMap();
             }
-            CreateGraphics(GetPolylineBuilder());
+            CreateGraphics();
         }
 
 
@@ -198,7 +198,7 @@ namespace DisplayAMap
         //}
         private async Task AccessMap()
         {
-        //    string documentsFolder = Path.Combine(_downloadLocation, "MedMap3_MapArea_1");
+            //    string documentsFolder = Path.Combine(_downloadLocation, "MedMap3_MapArea_1");
             var mobileMapPackage = await MobileMapPackage.OpenAsync(_downloadLocation);
 
             await mobileMapPackage.LoadAsync();
@@ -208,7 +208,7 @@ namespace DisplayAMap
         }
         private bool OfflineMapExists()
         {
-            return Directory.Exists(_downloadLocation) ;
+            return Directory.Exists(_downloadLocation);
         }
         // Field to store the polyline builder
         private PolylineBuilder polylineBuilder;
@@ -217,9 +217,9 @@ namespace DisplayAMap
         private void InitializeMeasuringTool()
         {
             // Set the initial polyline builder with a spatial reference
-            polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+            polylineBuilder = new PolylineBuilder(SpatialReferences.WebMercator);
 
-             //this.GeoViewTapped += MapView_GeoViewTapped;
+            //this.GeoViewTapped += MapView_GeoViewTapped;
 
 
         }
@@ -230,20 +230,26 @@ namespace DisplayAMap
             // Add the tapped point to the polyline builder
             polylineBuilder.AddPoint(e.Location);
 
-            // Create a polyline from the builder
-            Polyline polyline = polylineBuilder.ToGeometry();
+            // Check if the polyline builder has 2 points
+            if (polylineBuilder.Parts.Count > 0 && polylineBuilder.Parts[0].PointCount == 2)
+            {
+                // Create a polyline from the builder
+                Polyline polyline = polylineBuilder.ToGeometry();
 
-            // Measure the distance of the polyline
-            double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Meters, GeodeticCurveType.Geodesic);
+                // Measure the distance of the polyline
+                double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Meters, GeodeticCurveType.Geodesic);
 
-            // Display the distance (you might want to display this in the UI instead)
-            Debug.WriteLine($"Distance: {distance} meters");
+                // Display the distance (you might want to display this in the UI instead)
+                Debug.WriteLine($"Distance: {distance / 1000} km");
 
-            // Optionally, display the polyline on the map by adding it to a GraphicsOverlay
-            // This step requires you to have a GraphicsOverlay added to your MapView
-            var polylineGraphic = new Graphic(polyline);
-            // Assuming you have a GraphicsOverlay named 'graphicsOverlay'
-            
+                // Optionally, display the polyline on the map by adding it to a GraphicsOverlay
+                var polylineGraphic = new Graphic(polyline);
+                // Assuming you have a GraphicsOverlay named 'graphicsOverlay'
+                CreateGraphics(polylineGraphic);
+
+                // Reset the polyline builder for the next line
+                polylineBuilder = new PolylineBuilder(SpatialReferences.WebMercator);
+            }
         }
 
         private PolylineBuilder GetPolylineBuilder()
@@ -251,35 +257,24 @@ namespace DisplayAMap
             return polylineBuilder;
         }
 
-        // Call InitializeMeasuringTool() when your map is ready
-        private void CreateGraphics(PolylineBuilder polylineBuilder)
+        // Modified CreateGraphics to accept a Graphic parameter
+        private void CreateGraphics(Graphic polylineGraphic = null)
         {
             var TAGraphicsOverlay = new GraphicsOverlay();
-            GraphicsOverlayCollection overlays = new GraphicsOverlayCollection { TAGraphicsOverlay };
-            this.GraphicsOverlays = overlays;
-
-            var TAPoint = new MapPoint(34.7808, 32.0707, 20000, SpatialReferences.Wgs84);
-            var pointSymbol = new SimpleMarkerSymbol
+            if (GraphicsOverlays == null || GraphicsOverlays.Count == 0)
             {
-                Style = SimpleMarkerSymbolStyle.Circle,
-                Color = System.Drawing.Color.Orange,
-                Size = 10.0,
-                Outline = new SimpleLineSymbol
-                {
-                    Style = SimpleLineSymbolStyle.Solid,
-                    Color = System.Drawing.Color.Blue,
-                    Width = 2.0
-                }
-            };
-            var pointGraphic = new Graphic(TAPoint, pointSymbol);
-            TAGraphicsOverlay.Graphics.Add(pointGraphic);
-
-            if (polylineBuilder != null)
+                GraphicsOverlayCollection overlays = new GraphicsOverlayCollection { TAGraphicsOverlay };
+                this.GraphicsOverlays = overlays;
+            }
+            else
             {
-            //TAGraphicsOverlay.Graphics.Add(polylineBuilder);
+                TAGraphicsOverlay = GraphicsOverlays.FirstOrDefault();
             }
 
-
+            if (polylineGraphic != null)
+            {
+                TAGraphicsOverlay.Graphics.Add(polylineGraphic);
+            }
         }
     }
 }
