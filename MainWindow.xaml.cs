@@ -23,9 +23,9 @@ namespace DisplayAMap
         {
             InitializeComponent();
 
-            //MainMapView.SetViewpoint(new Viewpoint(mapCenterPoint, 100000));
             var viewModel = new MapViewModel();
             // Assuming MainMapView is the name of your MapView control in XAML
+            MainMapView.GraphicsOverlays = viewModel.GraphicsOverlays;
             MainMapView.GeoViewTapped += viewModel.MapView_GeoViewTapped;
 
             // Set the DataContext if it's not already set in XAML

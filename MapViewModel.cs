@@ -220,7 +220,7 @@ namespace DisplayAMap
         private void InitializeMeasuringTool()
         {
             // Set the initial polyline builder with a spatial reference
-            polylineBuilder = new PolylineBuilder(SpatialReferences.WebMercator);
+            polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
 
             //this.GeoViewTapped += MapView_GeoViewTapped;
 
@@ -230,8 +230,11 @@ namespace DisplayAMap
         // Event handler for map view taps
         public void MapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
         {
+            // Project e.Location to WGS84
+            var wgs84Point = GeometryEngine.Project(e.Location, SpatialReferences.Wgs84) as MapPoint;
+ 
             // Add the tapped point to the polyline builder
-            polylineBuilder.AddPoint(e.Location);
+            polylineBuilder.AddPoint(wgs84Point);
 
             // Check if the polyline builder has 2 points
             if (polylineBuilder.Parts.Count > 0 && polylineBuilder.Parts[0].PointCount == 2)
@@ -243,22 +246,22 @@ namespace DisplayAMap
             //    new MapPoint(3400000, 3200000, SpatialReferences.WebMercator),
             //    new MapPoint(350000, 33000000, SpatialReferences.WebMercator)
             //});
-
-                // Measure the distance of the polyline
-                double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Meters, GeodeticCurveType.Geodesic);
-
-                // Display the distance (you might want to display this in the UI instead)
-                MessageBox.Show($"Distance: {distance / 1000:F1} km");
-
                 // Optionally, display the polyline on the map by adding it to a GraphicsOverlay
                 var polylineGraphic = new Graphic(polyline);
                 polylineGraphic.IsVisible = true;
                 polylineGraphic.Symbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 20);
-                // Assuming you have a GraphicsOverlay named 'graphicsOverlay'
+                polylineGraphic.ZIndex = 10;
                 CreateGraphics(polylineGraphic);
+                // Measure the distance of the polyline
+                double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Kilometers, GeodeticCurveType.Geodesic);
+
+                // Display the distance (you might want to display this in the UI instead)
+                MessageBox.Show($"Distance: {distance :F1} km");
+
+
 
                 // Reset the polyline builder for the next line
-                polylineBuilder = new PolylineBuilder(SpatialReferences.WebMercator);
+                polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
             }
         }
 
@@ -296,6 +299,41 @@ namespace DisplayAMap
                 TAGraphicsOverlay.IsVisible = true;
                 OnPropertyChanged();
             }
+            // Create a new graphics overlay to contain a variety of graphics.
+            //var TAGraphicsOverlay = new GraphicsOverlay();
+
+            //// Add the overlay to a graphics overlay collection.
+            //GraphicsOverlayCollection overlays = new GraphicsOverlayCollection
+            //{
+            //    TAGraphicsOverlay
+            //};
+
+            //// Set the view model's "GraphicsOverlays" property (will be consumed by the map view).
+            //this.GraphicsOverlays = overlays;
+
+            //// Create a point geometry.
+            //var TAPoint = new MapPoint(34.7808, 32.0707, SpatialReferences.Wgs84);
+
+            //// Create a symbol to define how the point is displayed.
+            //var pointSymbol = new SimpleMarkerSymbol
+            //{
+            //    Style = SimpleMarkerSymbolStyle.Circle,
+            //    Color = System.Drawing.Color.Orange,
+            //    Size = 10.0
+            //};
+
+            //// Add an outline to the symbol.
+            //pointSymbol.Outline = new SimpleLineSymbol
+            //{
+            //    Style = SimpleLineSymbolStyle.Solid,
+            //    Color = System.Drawing.Color.Blue,
+            //    Width = 2.0
+            //};
+            //// Create a point graphic with the geometry and symbol.
+            //var pointGraphic = new Graphic(TAPoint, pointSymbol);
+
+            //// Add the point graphic to graphics overlay.
+            //TAGraphicsOverlay.Graphics.Add(pointGraphic);
         }
     }
 }
