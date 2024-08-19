@@ -68,7 +68,7 @@ namespace DisplayAMap
             }
         }
 
-        private GraphicsOverlayCollection? _graphicsOverlays;
+        private GraphicsOverlayCollection? _graphicsOverlays = new GraphicsOverlayCollection();
         public GraphicsOverlayCollection? GraphicsOverlays
         {
             get { 
@@ -102,34 +102,7 @@ namespace DisplayAMap
             OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
             IReadOnlyList<PreplannedMapArea> availableAreas = await offlineMapTask.GetPreplannedMapAreasAsync();
 
-            //foreach (var areaoffline in availableAreas )
-            //{
-            //    // Define the download location for each area
-            //    string areaDownloadLocation = Path.Combine(_downloadLocation, areaoffline.PortalItem.Title);
-
-            //    // Ensure the directory exists
-            //    Directory.CreateDirectory(areaDownloadLocation);
-
-            //    // Create download parameters
-            //    DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(areaoffline);
-
-            //    // Create the job
-            //    DownloadPreplannedOfflineMapJob job = offlineMapTask.DownloadPreplannedOfflineMap(downloadParameters, areaDownloadLocation);
-
-            //    // Start the job and await its completion
-            //    DownloadPreplannedOfflineMapResult result = await job.GetResultAsync();
-
-            //    if (result.HasErrors)
-            //    {
-            //        // Handle errors (e.g., log or display a message)
-            //        Debug.WriteLine($"Error downloading map for area {areaoffline.PortalItem.Title}");
-            //    }
-            //    else
-            //    {
-            //        // Success - the map is downloaded
-            //        Debug.WriteLine($"Successfully downloaded map for area {areaoffline.PortalItem.Title}");
-            //    }
-            //}
+           
             if (availableAreas?.FirstOrDefault() is PreplannedMapArea area)
             {
                 DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(area);
@@ -210,15 +183,14 @@ namespace DisplayAMap
             await mobileMapPackage.LoadAsync();
 
             this.Map = mobileMapPackage.Maps.First();
-
-
+             
         }
         private bool OfflineMapExists()
         {
             return Directory.Exists(_downloadLocation);
         }
         // Field to store the polyline builder
-        private PolylineBuilder polylineBuilder;
+        public PolylineBuilder polylineBuilder;
 
         // Method to initialize the measuring tool
         private void InitializeMeasuringTool()
@@ -236,9 +208,10 @@ namespace DisplayAMap
         {
             // Project e.Location to WGS84
             var wgs84Point = GeometryEngine.Project(e.Location, SpatialReferences.Wgs84) as MapPoint;
- 
+            var point = new MapPoint(wgs84Point.X, wgs84Point.Y, SpatialReferences.Wgs84);
             // Add the tapped point to the polyline builder
-            polylineBuilder.AddPoint(wgs84Point);
+            polylineBuilder.AddPoint(point.X,point.Y);
+           // AddPointToMap(32, 32, 1000, "TA");
 
             // Check if the polyline builder has 2 points
             if (polylineBuilder.Parts.Count > 0 && polylineBuilder.Parts[0].PointCount == 2)
@@ -246,29 +219,47 @@ namespace DisplayAMap
                 // Create a polyline from the builder
                 Polyline polyline = polylineBuilder.ToGeometry();
 
-            //    var polyline = new Polyline(new MapPoint[] {
-            //    new MapPoint(3400000, 3200000, SpatialReferences.WebMercator),
-            //    new MapPoint(350000, 33000000, SpatialReferences.WebMercator)
-            //});
                 // Optionally, display the polyline on the map by adding it to a GraphicsOverlay
                 var polylineGraphic = new Graphic(polyline);
                 polylineGraphic.IsVisible = true;
-                polylineGraphic.Symbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 20);
-                polylineGraphic.ZIndex = 10;
-                CreateGraphics(polylineGraphic);
+                polylineGraphic.Symbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 4);
+                //polylineGraphic.Symbol = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Triangle, System.Drawing.Color.Red, 20);
+
                 // Measure the distance of the polyline
                 double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Kilometers, GeodeticCurveType.Geodesic);
 
                 // Display the distance (you might want to display this in the UI instead)
-                MessageBox.Show($"Distance: {distance :F1} km");
+                //MessageBox.Show($"Distance: {distance :F1} km");
+                AddPointToMap(32, 32, 1000, $"{distance :F1} km");
 
-
-
+                // Add the graphic to the map view
+                CreateGraphics(polylineGraphic);     
                 // Reset the polyline builder for the next line
-                polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+          //      polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
             }
         }
+        private void AddPointToMap(double latitude, double longitude, double altitude, string input)
+        {
+            // Create a point geometry
+            MapPoint point = new MapPoint(longitude, latitude, altitude, SpatialReferences.Wgs84);
 
+            // Create a symbol for the point
+            SimpleMarkerSymbol pointSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.Blue, 10);
+
+            // Create a graphic for the point
+            Graphic pointGraphic = new Graphic(point, pointSymbol);
+
+            // Add the point graphic to the graphics overlay
+            CreateGraphics(pointGraphic);
+
+            // Display the input above the point
+            if (!string.IsNullOrEmpty(input))
+            {
+                TextSymbol textSymbol = new TextSymbol(input, System.Drawing.Color.Blue, 24, Esri.ArcGISRuntime.Symbology.HorizontalAlignment.Left, Esri.ArcGISRuntime.Symbology.VerticalAlignment.Top);
+                Graphic textGraphic = new Graphic(point, textSymbol);
+                CreateGraphics(textGraphic);
+            }
+        }
         private PolylineBuilder GetPolylineBuilder()
         {
             return polylineBuilder;
@@ -285,7 +276,7 @@ namespace DisplayAMap
 
             // Check if there is already a GraphicsOverlay to add the Graphic to, if not, create a new one.
             GraphicsOverlay TAGraphicsOverlay;
-            if (GraphicsOverlays.Count == 0)
+            if (GraphicsOverlays.Count >= 0)
             {
                 TAGraphicsOverlay = new GraphicsOverlay();
                 GraphicsOverlays.Add(TAGraphicsOverlay);
@@ -303,41 +294,40 @@ namespace DisplayAMap
                 TAGraphicsOverlay.IsVisible = true;
                 OnPropertyChanged();
             }
-            // Create a new graphics overlay to contain a variety of graphics.
-            //var TAGraphicsOverlay = new GraphicsOverlay();
-
-            //// Add the overlay to a graphics overlay collection.
-            //GraphicsOverlayCollection overlays = new GraphicsOverlayCollection
-            //{
-            //    TAGraphicsOverlay
-            //};
-
-            //// Set the view model's "GraphicsOverlays" property (will be consumed by the map view).
-            //this.GraphicsOverlays = overlays;
-
-            //// Create a point geometry.
-            //var TAPoint = new MapPoint(34.7808, 32.0707, SpatialReferences.Wgs84);
-
-            //// Create a symbol to define how the point is displayed.
-            //var pointSymbol = new SimpleMarkerSymbol
-            //{
-            //    Style = SimpleMarkerSymbolStyle.Circle,
-            //    Color = System.Drawing.Color.Orange,
-            //    Size = 10.0
-            //};
-
-            //// Add an outline to the symbol.
-            //pointSymbol.Outline = new SimpleLineSymbol
-            //{
-            //    Style = SimpleLineSymbolStyle.Solid,
-            //    Color = System.Drawing.Color.Blue,
-            //    Width = 2.0
-            //};
-            //// Create a point graphic with the geometry and symbol.
-            //var pointGraphic = new Graphic(TAPoint, pointSymbol);
-
-            //// Add the point graphic to graphics overlay.
-            //TAGraphicsOverlay.Graphics.Add(pointGraphic);
+            
         }
+
+        //private void CreateGraphics(Graphic polylineGraphic)
+        //{
+        //    // Check if the GraphicsOverlays collection is initialized, if not, initialize it.
+        //    if (GraphicsOverlays == null)
+        //    {
+        //        GraphicsOverlays = new GraphicsOverlayCollection();
+        //        // Set the SceneProperties of the GraphicsOverlay to use SurfacePlacement.Absolute
+        //    }
+
+        //    // Check if there is already a GraphicsOverlay to add the Graphic to, if not, create a new one.
+
+        //    GraphicsOverlay TAGraphicsOverlay = new GraphicsOverlay();
+
+        //    if (GraphicsOverlays.Count >= 0)
+        //    {
+        //        TAGraphicsOverlay = new GraphicsOverlay();
+        //        GraphicsOverlays.Add(TAGraphicsOverlay);
+        //        TAGraphicsOverlay.IsVisible = true;
+        //    }
+
+
+        //    // Add the polylineGraphic to the selected or new GraphicsOverlay
+        //    if (polylineGraphic != null)
+        //    {
+        //        TAGraphicsOverlay.Graphics.Add(polylineGraphic);
+        //        TAGraphicsOverlay.IsVisible = true;
+        //        //TAGraphicsOverlay.SceneProperties.SurfacePlacement = SurfacePlacement.Relative;
+
+        //        OnPropertyChanged();
+        //    }
+
+        //}
     }
 }

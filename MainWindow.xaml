@@ -13,8 +13,8 @@
     
     <Grid>
         <esri:MapView x:Name="MainMapView"
-                      Map="{Binding Map, Source={StaticResource MapViewModel}}"
-                      GraphicsOverlays="{Binding GraphicsOverlays, Source={StaticResource MapViewModel}}" />
+                      Map="{Binding Map}"
+                      GraphicsOverlays="{Binding GraphicsOverlays}" />
 
     </Grid>
 </Window>
