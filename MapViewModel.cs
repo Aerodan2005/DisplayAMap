@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,7 +27,7 @@ namespace DisplayAMap
     internal class MapViewModel : INotifyPropertyChanged
     {
         //private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMapMED_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-        private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
+        public string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
         public MapViewModel()
         {
             InitializeMap();
@@ -37,14 +37,14 @@ namespace DisplayAMap
         {
             if (true)//OfflineMapExists())
             {
-                await SetupMap();
+//                await SetupMap();
                 //                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
                 await AccessMap();
                 InitializeMeasuringTool();
             }
             else
             {
-                await SetupMap();
+               // await SetupMap();
                 await GetOfflinePreplannedMap();
             }
      //       CreateGraphics();
@@ -84,7 +84,9 @@ namespace DisplayAMap
         private async Task SetupMap()
         {
             ArcGISPortal portal = await ArcGISPortal.CreateAsync();
-            string webMapId = "3bc3a553c2a640c5bace2f3065751dc8";
+            //string webMapId = "3bc3a553c2a640c5bace2f3065751dc8";
+            string webMapId = "9d289b6059b14615b97b14e149a25eeb";
+
             PortalItem mapItem = await PortalItem.CreateAsync(portal, webMapId);
             Map map = new Map(mapItem);
             this.Map = map;
@@ -93,7 +95,8 @@ namespace DisplayAMap
         private async Task GetOfflinePreplannedMap()
         {
             var portal = await ArcGISPortal.CreateAsync();
-            var portalItem = await PortalItem.CreateAsync(portal, "3bc3a553c2a640c5bace2f3065751dc8");
+            //var portalItem = await PortalItem.CreateAsync(portal, "3bc3a553c2a640c5bace2f3065751dc8");
+            var portalItem = await PortalItem.CreateAsync(portal, "9d289b6059b14615b97b14e149a25eeb");
             var map = new Map(portalItem);
 
             OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
@@ -201,7 +204,8 @@ namespace DisplayAMap
         private async Task AccessMap()
         {
             //    string documentsFolder = Path.Combine(_downloadLocation, "MedMap3_MapArea_1");
-            var mobileMapPackage = await MobileMapPackage.OpenAsync(_downloadLocation);
+            string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
+            var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
 
             await mobileMapPackage.LoadAsync();
 
