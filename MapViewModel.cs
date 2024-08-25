@@ -219,32 +219,43 @@ namespace DisplayAMap
                 // Create a polyline from the builder
                 Polyline polyline = polylineBuilder.ToGeometry();
 
-                // Optionally, display the polyline on the map by adding it to a GraphicsOverlay
-                var polylineGraphic = new Graphic(polyline);
+                // Create a composite symbol with a semi-transparent border
+                var borderSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.FromArgb(64, 255, 0, 0), 40); // Semi-transparent red border
+                var coreSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 4); // Solid red core
+                var circleSymbol1 = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.FromArgb(64, 255, 0, 0), 10); // Circle symbol with the same color as the border
+                var circleSymbol2 = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.FromArgb(64, 255, 0, 0), 40); // Circle symbol with the same color as the border
+                
+                var compositeSymbol1 = new CompositeSymbol(new Symbol[] { borderSymbol, coreSymbol , circleSymbol1 });
+                var compositeSymbol2 = new CompositeSymbol(new Symbol[] { borderSymbol, coreSymbol , circleSymbol2 });
+
+                // Create a graphic with the composite symbol
+                var polylineGraphic = new Graphic(polyline, compositeSymbol2);
                 polylineGraphic.IsVisible = true;
-                polylineGraphic.Symbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 4);
-                //polylineGraphic.Symbol = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Triangle, System.Drawing.Color.Red, 20);
 
                 // Measure the distance of the polyline
                 double distance = GeometryEngine.LengthGeodetic(polyline, LinearUnits.Kilometers, GeodeticCurveType.Geodesic);
 
-                // Display the distance (you might want to display this in the UI instead)
-                //MessageBox.Show($"Distance: {distance :F1} km");
-                AddPointToMap(32, 32, 1000, $"{distance :F1} km");
+                // Optionally, display the distance
+                // MessageBox.Show($"Distance: {distance:F1} km");
 
                 // Add the graphic to the map view
-                CreateGraphics(polylineGraphic);     
+                CreateGraphics(polylineGraphic);
+                // Display the distance (you might want to display this in the UI instead)
+                //MessageBox.Show($"Distance: {distance :F1} km");
+                AddPointToMap( point.Y, point.X, $"{distance :F1} km");
+
                 // Reset the polyline builder for the next line
-          //      polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+                polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+
             }
         }
-        private void AddPointToMap(double latitude, double longitude, double altitude, string input)
+        private void AddPointToMap(double latitude, double longitude, string input)
         {
             // Create a point geometry
-            MapPoint point = new MapPoint(longitude, latitude, altitude, SpatialReferences.Wgs84);
+            MapPoint point = new MapPoint(longitude, latitude, SpatialReferences.Wgs84);
 
             // Create a symbol for the point
-            SimpleMarkerSymbol pointSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.Blue, 10);
+            SimpleMarkerSymbol pointSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.DarkRed, 10);
 
             // Create a graphic for the point
             Graphic pointGraphic = new Graphic(point, pointSymbol);
@@ -255,7 +266,7 @@ namespace DisplayAMap
             // Display the input above the point
             if (!string.IsNullOrEmpty(input))
             {
-                TextSymbol textSymbol = new TextSymbol(input, System.Drawing.Color.Blue, 24, Esri.ArcGISRuntime.Symbology.HorizontalAlignment.Left, Esri.ArcGISRuntime.Symbology.VerticalAlignment.Top);
+                TextSymbol textSymbol = new TextSymbol(input, System.Drawing.Color.DarkRed, 24, Esri.ArcGISRuntime.Symbology.HorizontalAlignment.Left, Esri.ArcGISRuntime.Symbology.VerticalAlignment.Top);
                 Graphic textGraphic = new Graphic(point, textSymbol);
                 CreateGraphics(textGraphic);
             }
