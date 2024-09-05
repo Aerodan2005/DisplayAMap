@@ -31,5 +31,12 @@ namespace DisplayAMap
             // Set the DataContext if it's not already set in XAML
             this.DataContext = viewModel;
         }
+
+
+        private void Show1000(object sender, RoutedEventArgs e)
+        {
+            var viewModel = new MapViewModel();
+            viewModel.show1000 = true;
+        }
     }
 }

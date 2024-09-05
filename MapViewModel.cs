@@ -21,11 +21,20 @@ using System.Drawing;
 using System.IO;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.UI.Controls;
+using Windows.Devices.Radios;
 
 namespace DisplayAMap
 {
     internal class MapViewModel : INotifyPropertyChanged
     {
+
+        private MainWindow _mainWindow;
+
+        public MapViewModel(MainWindow mainWindow)
+        {
+            _mainWindow = mainWindow;
+            InitializeMap();
+        }
         //private string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMapMED_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         public string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
         public MapViewModel()
@@ -41,6 +50,8 @@ namespace DisplayAMap
                 //                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
                 await AccessMap();
                 InitializeMeasuringTool();
+                show1000 = false;
+                show500 = false;
             }
             else
             {
@@ -202,7 +213,8 @@ namespace DisplayAMap
 
 
         }
-
+        public  bool show1000 ;
+        public  bool show500;
         // Event handler for map view taps
         public void MapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
         {
@@ -211,8 +223,13 @@ namespace DisplayAMap
             var point = new MapPoint(wgs84Point.X, wgs84Point.Y, SpatialReferences.Wgs84);
             // Add the tapped point to the polyline builder
             polylineBuilder.AddPoint(point.X,point.Y);
-           // AddPointToMap(32, 32, 1000, "TA");
-
+            // AddPointToMap(32, 32, 1000, "TA");
+           if(false)
+            {
+                DrawCircleOnMap( point.Y,point.X, 1000.0);
+                show1000 = false;
+                return;
+            }
             // Check if the polyline builder has 2 points
             if (polylineBuilder.Parts.Count > 0 && polylineBuilder.Parts[0].PointCount == 2)
             {
@@ -271,6 +288,24 @@ namespace DisplayAMap
                 CreateGraphics(textGraphic);
             }
         }
+        public void DrawCircleOnMap(double latitude, double longitude, double radius)
+        {
+            // Create a point geometry
+            MapPoint centerPoint = new MapPoint(longitude, latitude, SpatialReferences.Wgs84);
+
+            // Create a buffer around the center point to represent the circle
+            Geometry bufferGeometry = GeometryEngine.BufferGeodetic(centerPoint, radius, LinearUnits.Kilometers);
+
+            // Create a symbol for the circle
+            SimpleFillSymbol circleSymbol = new SimpleFillSymbol(SimpleFillSymbolStyle.Solid, System.Drawing.Color.Transparent, new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 2));
+
+            // Create a graphic for the circle
+            Graphic circleGraphic = new Graphic(bufferGeometry, circleSymbol);
+
+            // Add the circle graphic to the graphics overlay
+            CreateGraphics(circleGraphic);
+        }
+
         private PolylineBuilder GetPolylineBuilder()
         {
             return polylineBuilder;

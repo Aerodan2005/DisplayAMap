@@ -15,6 +15,18 @@
         <esri:MapView x:Name="MainMapView"
                       Map="{Binding Map}"
                       GraphicsOverlays="{Binding GraphicsOverlays}" />
+        <StackPanel>
+            <Button Content="1000km"
+                    HorizontalAlignment="Left"
+                    Margin="10"
+                    VerticalAlignment="Top"
+                    Click="Show1000" />
+            <!--<Button Content="500km"
+                    HorizontalAlignment="Left"
+                    Margin="10"
+                    VerticalAlignment="Top"
+                    Click="Show500" />-->
 
+        </StackPanel>
     </Grid>
 </Window>
