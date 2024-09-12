@@ -49,9 +49,9 @@ namespace DisplayAMap
 //                await SetupMap();
                 //                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
                 await AccessMap();
-                InitializeMeasuringTool();
-                show1000 = false;
-                show500 = false;
+                //InitializeMeasuringTool();
+                //show1000 = false;
+                //show500 = false;
             }
             else
             {
@@ -188,13 +188,65 @@ namespace DisplayAMap
         private async Task AccessMap()
         {
             //    string documentsFolder = Path.Combine(_downloadLocation, "MedMap3_MapArea_1");
-            string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
-            var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
+            //string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
+            //string osmMapLocation = @"F:\asia-latest.osm\asia-latest.osm";
+            //string osmMapLocation = @"F:\israel-and-palestine-latest.osm\israel-and-palestine-latest.osm";
+            //string mapLocation = @"F:\med1qgis.png";
 
-            await mobileMapPackage.LoadAsync();
+            //var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
 
-            this.Map = mobileMapPackage.Maps.First();
-             
+            //await mobileMapPackage.LoadAsync();
+
+            //this.Map = mobileMapPackage.Maps.First();
+            var myMap = new Map();
+            string mbTilesPath = @"C:\Work\FromQGis\Mid1.mbtiles";
+            var tileCache = new TileCache(mbTilesPath);
+            var tiledLayer = new ArcGISTiledLayer(tileCache);
+            await tiledLayer.LoadAsync();
+            myMap.Basemap.BaseLayers.Add(tiledLayer);
+            this.Map = myMap;
+
+            try
+            {
+  //              await tiledLayer.LoadAsync();
+                if (tiledLayer.LoadStatus == Esri.ArcGISRuntime.LoadStatus.Loaded)
+                {
+                    //await this.SetViewpointGeometryAsync(tiledLayer.FullExtent);
+                    MessageBox.Show("Loaded the tiled layer.");
+                }
+                else
+                {
+                    MessageBox.Show("Failed to load the tiled layer.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading tiled layer: {ex.Message}");
+            }
+
+            //try
+            //{
+            //    // Create a new map
+            //    var osmMap = new Map();
+
+            //    // Create a feature table from your OSM data file
+            //    var osmFeatureTable = new ShapefileFeatureTable(osmMapLocation);
+
+            //    // Create a feature layer from the feature table
+            //    var osmFeatureLayer;
+            //    await osmFeatureLayer = new FeatureLayer(osmFeatureTable);
+            //    // Add the layer to the map
+            //    osmMap.OperationalLayers.Add(osmFeatureLayer);
+
+            //    // Show the map in your MapView
+            //    this.Map = osmMap;
+            //}
+            //catch (Exception ex)
+            //{
+            //    // Handle any exceptions (e.g., file not found, invalid data)
+            //    Console.WriteLine($"Error loading OSM map: {ex.Message}");
+            //}
+
         }
         private bool OfflineMapExists()
         {
@@ -343,37 +395,6 @@ namespace DisplayAMap
             
         }
 
-        //private void CreateGraphics(Graphic polylineGraphic)
-        //{
-        //    // Check if the GraphicsOverlays collection is initialized, if not, initialize it.
-        //    if (GraphicsOverlays == null)
-        //    {
-        //        GraphicsOverlays = new GraphicsOverlayCollection();
-        //        // Set the SceneProperties of the GraphicsOverlay to use SurfacePlacement.Absolute
-        //    }
-
-        //    // Check if there is already a GraphicsOverlay to add the Graphic to, if not, create a new one.
-
-        //    GraphicsOverlay TAGraphicsOverlay = new GraphicsOverlay();
-
-        //    if (GraphicsOverlays.Count >= 0)
-        //    {
-        //        TAGraphicsOverlay = new GraphicsOverlay();
-        //        GraphicsOverlays.Add(TAGraphicsOverlay);
-        //        TAGraphicsOverlay.IsVisible = true;
-        //    }
-
-
-        //    // Add the polylineGraphic to the selected or new GraphicsOverlay
-        //    if (polylineGraphic != null)
-        //    {
-        //        TAGraphicsOverlay.Graphics.Add(polylineGraphic);
-        //        TAGraphicsOverlay.IsVisible = true;
-        //        //TAGraphicsOverlay.SceneProperties.SurfacePlacement = SurfacePlacement.Relative;
-
-        //        OnPropertyChanged();
-        //    }
-
-        //}
+    
     }
 }
