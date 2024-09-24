@@ -144,44 +144,58 @@ namespace DisplayAMap
                 await mobileMapPackage.LoadAsync();
                 this.Map = mobileMapPackage.Maps.First();
 
+                // Load the first TPK file
+                string tpkPath1 = @"C:\Work\TilePackages\world_imagery_tpk.tpk";
+                if (!File.Exists(tpkPath1))
+                {
+                    throw new FileNotFoundException("TPK file not found.", tpkPath1);
+                }
+                var tiledLayer1 = new ArcGISTiledLayer(new Uri(tpkPath1));
+                await tiledLayer1.LoadAsync();
+
+                //// Load the second TPK file
+                //string tpkPath2 = @"C:\Work\TilePackages\world_reference_overlay_4-11.tpk";
+                //if (!File.Exists(tpkPath2))
+                //{
+                //    throw new FileNotFoundException("TPK file not found.", tpkPath2);
+                //}
+                //var tiledLayer2 = new ArcGISTiledLayer(new Uri(tpkPath2));
+                //await tiledLayer2.LoadAsync();
+
                 //// Load the VTPK file
-                ////string vtpkPath = @"F:\VTPK\Hybrid Reference Layer1.vtpk";
                 //string vtpkPath = @"C:\Work\BaseMaps\Hybrid.vtpk";
                 //if (!File.Exists(vtpkPath))
                 //{
                 //    throw new FileNotFoundException("VTPK file not found.", vtpkPath);
                 //}
-
-                //// Create a new ArcGISVectorTiledLayer from the vector tile package
                 //var vectorTiledLayer = new ArcGISVectorTiledLayer(new Uri(vtpkPath));
                 //await vectorTiledLayer.LoadAsync();
 
-                //// Create a new basemap with the vector tiled layer
-                //var basemap = new Basemap(vectorTiledLayer);
-
-                // Load the TPK file
-                //    string tpkPath = @"C:\Work\TilePackages\national_geographic_world_map_tpk.tpk";
-                string tpkPath = @"C:\Work\TilePackages\world_imagery_tpk.tpk";
-                if (!File.Exists(tpkPath))
-                {
-                    throw new FileNotFoundException("TPK file not found.", tpkPath);
-                }
-
-                // Create a new ArcGISTiledLayer from the tile package
-                var tiledLayer = new ArcGISTiledLayer(new Uri(tpkPath));
-                await tiledLayer.LoadAsync();
-
-                // Create a new basemap with the tiled layer
-                var basemap = new Basemap(tiledLayer);
+                // Create a new basemap with the first tiled layer
+                var basemap = new Basemap(tiledLayer1);
 
                 // Set the basemap to the map
                 this.Map.Basemap = basemap;
+
+                // Add the second tiled layer as an operational layer
+                //this.Map.OperationalLayers.Add(tiledLayer2);
+
+                // Add the vector tiled layer as an operational layer
+                //this.Map.OperationalLayers.Add(vectorTiledLayer);
+
+                // Add the first map from the mobile map package as the last layer
+                var mobileMap = mobileMapPackage.Maps.First();
+                foreach (var layer in mobileMap.OperationalLayers)
+                {
+                    this.Map.OperationalLayers.Add(layer);
+                }
+
             }
             catch (Exception ex)
             {
                 // Log the exception message
                 Debug.WriteLine($"Exception: {ex.Message}");
-                MessageBox.Show($"Failed to load TPKX file: {ex.Message}");
+                MessageBox.Show($"Failed to load map layers: {ex.Message}");
             }
 
         }
