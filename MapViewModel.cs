@@ -153,14 +153,14 @@ namespace DisplayAMap
                 var tiledLayer1 = new ArcGISTiledLayer(new Uri(tpkPath1));
                 await tiledLayer1.LoadAsync();
 
-                //// Load the second TPK file
-                //string tpkPath2 = @"C:\Work\TilePackages\world_reference_overlay_4-11.tpk";
-                //if (!File.Exists(tpkPath2))
-                //{
-                //    throw new FileNotFoundException("TPK file not found.", tpkPath2);
-                //}
-                //var tiledLayer2 = new ArcGISTiledLayer(new Uri(tpkPath2));
-                //await tiledLayer2.LoadAsync();
+                // Load the second TPK file
+                string tpkPath2 = @"C:\Work\TilePackages\world_boundaries_and_places_4-11.tpk";
+                if (!File.Exists(tpkPath2))
+                {
+                    throw new FileNotFoundException("TPK file not found.", tpkPath2);
+                }
+                var tiledLayer2 = new ArcGISTiledLayer(new Uri(tpkPath2));
+                await tiledLayer2.LoadAsync();
 
                 //// Load the VTPK file
                 //string vtpkPath = @"C:\Work\BaseMaps\Hybrid.vtpk";
@@ -177,18 +177,18 @@ namespace DisplayAMap
                 // Set the basemap to the map
                 this.Map.Basemap = basemap;
 
-                // Add the second tiled layer as an operational layer
-                //this.Map.OperationalLayers.Add(tiledLayer2);
+                 //Add the second tiled layer as an operational layer
+                this.Map.OperationalLayers.Add(tiledLayer2);
 
                 // Add the vector tiled layer as an operational layer
                 //this.Map.OperationalLayers.Add(vectorTiledLayer);
 
                 // Add the first map from the mobile map package as the last layer
-                var mobileMap = mobileMapPackage.Maps.First();
-                foreach (var layer in mobileMap.OperationalLayers)
-                {
-                    this.Map.OperationalLayers.Add(layer);
-                }
+                //var mobileMap = mobileMapPackage.Maps.First();
+                //foreach (var layer in mobileMap.OperationalLayers)
+                //{
+                //    this.Map.OperationalLayers.Add(layer);
+                //}
 
             }
             catch (Exception ex)
