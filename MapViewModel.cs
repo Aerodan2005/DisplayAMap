@@ -22,6 +22,9 @@ using System.IO;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.UI.Controls;
 using Windows.Devices.Radios;
+using Newtonsoft.Json.Linq;
+
+
 
 namespace DisplayAMap
 {
@@ -46,19 +49,19 @@ namespace DisplayAMap
         {
             if (true)//OfflineMapExists())
             {
-//                await SetupMap();
+                //                await SetupMap();
                 //                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
                 await AccessMap();
-                //InitializeMeasuringTool();
+                InitializeMeasuringTool();
                 //show1000 = false;
                 //show500 = false;
             }
             else
             {
-               // await SetupMap();
+                // await SetupMap();
                 await GetOfflinePreplannedMap();
             }
-     //       CreateGraphics();
+            //       CreateGraphics();
         }
 
 
@@ -82,8 +85,9 @@ namespace DisplayAMap
         private GraphicsOverlayCollection? _graphicsOverlays = new GraphicsOverlayCollection();
         public GraphicsOverlayCollection? GraphicsOverlays
         {
-            get { 
-                return _graphicsOverlays; 
+            get
+            {
+                return _graphicsOverlays;
             }
             set
             {
@@ -113,7 +117,7 @@ namespace DisplayAMap
             OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
             IReadOnlyList<PreplannedMapArea> availableAreas = await offlineMapTask.GetPreplannedMapAreasAsync();
 
-           
+
             if (availableAreas?.FirstOrDefault() is PreplannedMapArea area)
             {
                 DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(area);
@@ -129,123 +133,56 @@ namespace DisplayAMap
                 }
             }
         }
-        //private async Task GetOfflinePreplannedMap()
-        //{
-        //    var portal = await ArcGISPortal.CreateAsync();
-        //    var portalItem = await PortalItem.CreateAsync(portal, "42ed05cb907d4be69e74be788d1ec9df"); // Replace with your web map ID
-        //    var map = new Map(portalItem);
 
-        //    OfflineMapTask offlineMapTask = await OfflineMapTask.CreateAsync(map);
-        //    IReadOnlyList<PreplannedMapArea> availableAreas = await offlineMapTask.GetPreplannedMapAreasAsync();
-
-        //    if (availableAreas?.FirstOrDefault() is PreplannedMapArea area)
-        //    {
-        //        DownloadPreplannedOfflineMapParameters downloadParameters = await offlineMapTask.CreateDefaultDownloadPreplannedOfflineMapParametersAsync(area);
-
-        //        string documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        //        _downloadLocation = System.IO.Path.Combine(documentsFolder, "OfflineMap");
-
-        //        DownloadPreplannedOfflineMapJob job = offlineMapTask.DownloadPreplannedOfflineMap(downloadParameters, _downloadLocation);
-        //        DownloadPreplannedOfflineMapResult result = await job.GetResultAsync();
-
-        //        if (result?.OfflineMap is Map offlineMap)
-        //        {
-        //            this.Map = offlineMap;
-        //        }
-        //    }
-        //}
-        //private async Task AccessMap()
-        //{
-        //    // Assuming _downloadLocation points to the directory containing the .tpk file
-        //    // and "YourTilePackage.tpk" is the name of your tile package file.
-        //    string tpkFilePath = Path.Combine(_downloadLocation, "p13\\37xpi4a64lqgcycwijyijeaizf.tpk");
-
-        //    // Create a new tile cache from the .tpk file
-        //    TileCache tileCache = new TileCache(tpkFilePath);
-
-        //    // Create a tiled layer from the tile cache
-        //    ArcGISTiledLayer tiledLayer = new ArcGISTiledLayer(tileCache);
-
-        //    // Wait for the tiled layer to load
-        //    await tiledLayer.LoadAsync();
-
-        //    // Check if the layer loaded successfully
-        //    if (tiledLayer.LoadStatus == Esri.ArcGISRuntime.LoadStatus.Loaded)
-        //    {
-        //        // Create a new map and set the tiled layer as the basemap
-        //        Map map = new Map();
-        //        map.Basemap = new Basemap(tiledLayer);
-
-        //        // Assign the map to the Map property to display it
-        //        this.Map = map;
-        //    }
-        //    else
-        //    {
-        //        // Handle the case where the layer failed to load
-        //        MessageBox.Show($"Failed to load the tile package: {tiledLayer.LoadError.Message}", "Error");
-        //    }
-        //}
         private async Task AccessMap()
         {
-            //    string documentsFolder = Path.Combine(_downloadLocation, "MedMap3_MapArea_1");
-            //string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
-            //string osmMapLocation = @"F:\asia-latest.osm\asia-latest.osm";
-            //string osmMapLocation = @"F:\israel-and-palestine-latest.osm\israel-and-palestine-latest.osm";
-            //string mapLocation = @"F:\med1qgis.png";
-
-            //var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
-
-            //await mobileMapPackage.LoadAsync();
-
-            //this.Map = mobileMapPackage.Maps.First();
-            var myMap = new Map();
-            string mbTilesPath = @"C:\Work\FromQGis\Mid1.mbtiles";
-            var tileCache = new TileCache(mbTilesPath);
-            var tiledLayer = new ArcGISTiledLayer(tileCache);
-            await tiledLayer.LoadAsync();
-            myMap.Basemap.BaseLayers.Add(tiledLayer);
-            this.Map = myMap;
 
             try
             {
-  //              await tiledLayer.LoadAsync();
-                if (tiledLayer.LoadStatus == Esri.ArcGISRuntime.LoadStatus.Loaded)
+                string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
+                var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
+                await mobileMapPackage.LoadAsync();
+                this.Map = mobileMapPackage.Maps.First();
+
+                //// Load the VTPK file
+                ////string vtpkPath = @"F:\VTPK\Hybrid Reference Layer1.vtpk";
+                //string vtpkPath = @"C:\Work\BaseMaps\Hybrid.vtpk";
+                //if (!File.Exists(vtpkPath))
+                //{
+                //    throw new FileNotFoundException("VTPK file not found.", vtpkPath);
+                //}
+
+                //// Create a new ArcGISVectorTiledLayer from the vector tile package
+                //var vectorTiledLayer = new ArcGISVectorTiledLayer(new Uri(vtpkPath));
+                //await vectorTiledLayer.LoadAsync();
+
+                //// Create a new basemap with the vector tiled layer
+                //var basemap = new Basemap(vectorTiledLayer);
+
+                // Load the TPK file
+                //    string tpkPath = @"C:\Work\TilePackages\national_geographic_world_map_tpk.tpk";
+                string tpkPath = @"C:\Work\TilePackages\world_imagery_tpk.tpk";
+                if (!File.Exists(tpkPath))
                 {
-                    //await this.SetViewpointGeometryAsync(tiledLayer.FullExtent);
-                    MessageBox.Show("Loaded the tiled layer.");
+                    throw new FileNotFoundException("TPK file not found.", tpkPath);
                 }
-                else
-                {
-                    MessageBox.Show("Failed to load the tiled layer.");
-                }
+
+                // Create a new ArcGISTiledLayer from the tile package
+                var tiledLayer = new ArcGISTiledLayer(new Uri(tpkPath));
+                await tiledLayer.LoadAsync();
+
+                // Create a new basemap with the tiled layer
+                var basemap = new Basemap(tiledLayer);
+
+                // Set the basemap to the map
+                this.Map.Basemap = basemap;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading tiled layer: {ex.Message}");
+                // Log the exception message
+                Debug.WriteLine($"Exception: {ex.Message}");
+                MessageBox.Show($"Failed to load TPKX file: {ex.Message}");
             }
-
-            //try
-            //{
-            //    // Create a new map
-            //    var osmMap = new Map();
-
-            //    // Create a feature table from your OSM data file
-            //    var osmFeatureTable = new ShapefileFeatureTable(osmMapLocation);
-
-            //    // Create a feature layer from the feature table
-            //    var osmFeatureLayer;
-            //    await osmFeatureLayer = new FeatureLayer(osmFeatureTable);
-            //    // Add the layer to the map
-            //    osmMap.OperationalLayers.Add(osmFeatureLayer);
-
-            //    // Show the map in your MapView
-            //    this.Map = osmMap;
-            //}
-            //catch (Exception ex)
-            //{
-            //    // Handle any exceptions (e.g., file not found, invalid data)
-            //    Console.WriteLine($"Error loading OSM map: {ex.Message}");
-            //}
 
         }
         private bool OfflineMapExists()
@@ -265,8 +202,8 @@ namespace DisplayAMap
 
 
         }
-        public  bool show1000 ;
-        public  bool show500;
+        public bool show1000;
+        public bool show500;
         // Event handler for map view taps
         public void MapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
         {
@@ -274,11 +211,11 @@ namespace DisplayAMap
             var wgs84Point = GeometryEngine.Project(e.Location, SpatialReferences.Wgs84) as MapPoint;
             var point = new MapPoint(wgs84Point.X, wgs84Point.Y, SpatialReferences.Wgs84);
             // Add the tapped point to the polyline builder
-            polylineBuilder.AddPoint(point.X,point.Y);
+            polylineBuilder.AddPoint(point.X, point.Y);
             // AddPointToMap(32, 32, 1000, "TA");
-           if(false)
+            if (false)
             {
-                DrawCircleOnMap( point.Y,point.X, 1000.0);
+                DrawCircleOnMap(point.Y, point.X, 1000.0);
                 show1000 = false;
                 return;
             }
@@ -293,9 +230,9 @@ namespace DisplayAMap
                 var coreSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 4); // Solid red core
                 var circleSymbol1 = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.FromArgb(64, 255, 0, 0), 10); // Circle symbol with the same color as the border
                 var circleSymbol2 = new SimpleMarkerSymbol(SimpleMarkerSymbolStyle.Circle, System.Drawing.Color.FromArgb(64, 255, 0, 0), 40); // Circle symbol with the same color as the border
-                
-                var compositeSymbol1 = new CompositeSymbol(new Symbol[] { borderSymbol, coreSymbol , circleSymbol1 });
-                var compositeSymbol2 = new CompositeSymbol(new Symbol[] { borderSymbol, coreSymbol , circleSymbol2 });
+
+                var compositeSymbol1 = new CompositeSymbol(new Symbol[] { borderSymbol, coreSymbol, circleSymbol1 });
+                var compositeSymbol2 = new CompositeSymbol(new Symbol[] { borderSymbol, coreSymbol, circleSymbol2 });
 
                 // Create a graphic with the composite symbol
                 var polylineGraphic = new Graphic(polyline, compositeSymbol2);
@@ -311,7 +248,7 @@ namespace DisplayAMap
                 CreateGraphics(polylineGraphic);
                 // Display the distance (you might want to display this in the UI instead)
                 //MessageBox.Show($"Distance: {distance :F1} km");
-                AddPointToMap( point.Y, point.X, $"{distance :F1} km");
+                AddPointToMap(point.Y, point.X, $"{distance:F1} km");
 
                 // Reset the polyline builder for the next line
                 polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
@@ -392,9 +329,9 @@ namespace DisplayAMap
                 TAGraphicsOverlay.IsVisible = true;
                 OnPropertyChanged();
             }
-            
+
         }
 
-    
+
     }
 }
