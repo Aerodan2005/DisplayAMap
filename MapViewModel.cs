@@ -28,7 +28,7 @@ using Newtonsoft.Json.Linq;
 
 namespace DisplayAMap
 {
-    internal class MapViewModel : INotifyPropertyChanged
+    public partial class MapViewModel : INotifyPropertyChanged
     {
 
         private MainWindow _mainWindow;
