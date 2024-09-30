@@ -134,7 +134,7 @@ namespace DisplayAMap
             }
         }
 
-        private async Task AccessMap()
+        public async Task AccessMap()
         {
 
             try
