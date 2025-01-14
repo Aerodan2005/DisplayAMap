@@ -219,20 +219,22 @@ namespace DisplayAMap
         public bool show1000;
         public bool show500;
 
-        public void AddTrajectoryToMap()
+        public void AddTrajectoryToMap(Esri.ArcGISRuntime.Geometry.MapPoint newPoint)
         {
+            // Check if the polylineBuilder is initialized, if not, initialize it.
+            if (polylineBuilder == null)
+            {
+                polylineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+            }
+
+            // Add the new point to the polyline builder
+            polylineBuilder.AddPoint(newPoint);
+
             // Create a simple line symbol for the trajectory
             SimpleLineSymbol lineSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, System.Drawing.Color.Red, 2);
 
-            // Create a polyline from the trajectory points
-            var polyline = new PolylineBuilder(SpatialReferences.Wgs84);
-
-                polyline.AddPoint(51.382, 35.725);
-                polyline.AddPoint(35.495, 33.889);
-
-
             // Create a graphic for the polyline
-            var graphic = new Graphic(polyline.ToGeometry(), lineSymbol);
+            var graphic = new Graphic(polylineBuilder.ToGeometry(), lineSymbol);
 
             // Add the graphic to the map view
             CreateGraphics(graphic);
