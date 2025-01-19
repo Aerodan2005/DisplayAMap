@@ -133,7 +133,7 @@ namespace DisplayAMap
                 }
             }
         }
-
+        public event EventHandler MapAccessed;
         public async Task AccessMap()
         {
 
@@ -190,6 +190,10 @@ namespace DisplayAMap
                 //    this.Map.OperationalLayers.Add(layer);
                 //}
 
+                // Trigger the event to signal that AccessMap has finished
+                OnMapAccessed();
+
+
             }
             catch (Exception ex)
             {
@@ -199,6 +203,11 @@ namespace DisplayAMap
             }
 
         }
+        protected virtual void OnMapAccessed()
+        {
+            MapAccessed?.Invoke(this, EventArgs.Empty);
+        }
+
         private bool OfflineMapExists()
         {
             return Directory.Exists(_downloadLocation);
