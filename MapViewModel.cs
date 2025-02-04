@@ -23,6 +23,7 @@ using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.UI.Controls;
 using Windows.Devices.Radios;
 using Newtonsoft.Json.Linq;
+using MetisDB;
 
 
 //doronnnnn
@@ -139,13 +140,15 @@ namespace DisplayAMap
 
             try
             {
-                string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
+                string mapLocation = System.IO.Path.Combine(AppConfigSvc.appCfg.baseDataFolder, "Maps", "MapNew.mmpk");
+
+                //string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
                 var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
                 await mobileMapPackage.LoadAsync();
                 this.Map = mobileMapPackage.Maps.First();
 
                 // Load the first TPK file
-                string tpkPath1 = @"C:\Work\TilePackages\world_imagery_tpk.tpk";
+                string tpkPath1 = System.IO.Path.Combine(AppConfigSvc.appCfg.baseDataFolder, "Maps","world_imagery_tpk.tpk");
                 if (!File.Exists(tpkPath1))
                 {
                     throw new FileNotFoundException("TPK file not found.", tpkPath1);
@@ -154,7 +157,7 @@ namespace DisplayAMap
                 await tiledLayer1.LoadAsync();
 
                 // Load the second TPK file
-                string tpkPath2 = @"C:\Work\TilePackages\world_boundaries_and_places_4-11.tpk";
+                string tpkPath2 = System.IO.Path.Combine(AppConfigSvc.appCfg.baseDataFolder, "Maps", "world_boundaries_and_places_4-11.tpk");
                 if (!File.Exists(tpkPath2))
                 {
                     throw new FileNotFoundException("TPK file not found.", tpkPath2);
