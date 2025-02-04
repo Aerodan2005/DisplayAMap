@@ -25,7 +25,7 @@ using Windows.Devices.Radios;
 using Newtonsoft.Json.Linq;
 
 
-
+//doronnnnn
 namespace DisplayAMap
 {
     public partial class MapViewModel : INotifyPropertyChanged
