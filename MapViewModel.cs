@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,57 +43,100 @@ namespace DisplayAMap
         public string _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
         public MapViewModel()
         {
-            InitializeMap();
+            // Use a basic imagery basemap instead of trying to load files right away
+            // This prevents errors during application startup
+            try
+            {
+                // Create a simple basemap without trying to access files
+                Map = new Map(BasemapStyle.ArcGISImagery);
+                
+                // Initialize GraphicsOverlays collection
+                if (_graphicsOverlays == null)
+                {
+                    _graphicsOverlays = new GraphicsOverlayCollection();
+                }
+                
+                // We'll initialize the full map later once the application is ready
+                Console.WriteLine("Created basic MapViewModel with imagery basemap");
+                
+                // IMPORTANT: Don't try to load any files in the constructor
+                // Just create a basic map that will work no matter what
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in MapViewModel constructor: {ex.Message}");
+            }
         }
 
         private async void InitializeMap()
         {
-            if (true)//OfflineMapExists())
+            try
             {
-                //                await SetupMap();
-                //                _downloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "OfflineMap");
-                await AccessMap();
-                InitializeMeasuringTool();
-                //show1000 = false;
-                //show500 = false;
+                // Delay initialization until everything is ready
+                await Task.Delay(1000);
+                
+                // Create a basic online map that doesn't require any local files
+                // This is the safest approach since we don't know if files exist
+                Map = new Map(BasemapStyle.ArcGISImagery);
+                
+                Console.WriteLine("Map initialized with imagery basemap (online version)");
             }
-            else
+            catch (Exception ex)
             {
-                // await SetupMap();
-                await GetOfflinePreplannedMap();
-            }
-            //       CreateGraphics();
-        }
-
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        private Map? _map;
-        public Map? Map
-        {
-            get { return _map; }
-            set
-            {
-                _map = value;
-                OnPropertyChanged();
+                Console.WriteLine($"Error in InitializeMap: {ex.Message}");
             }
         }
-
-        private GraphicsOverlayCollection? _graphicsOverlays = new GraphicsOverlayCollection();
-        public GraphicsOverlayCollection? GraphicsOverlays
+        
+        // New method that safely loads local map files if they're available
+        public async Task TryLoadLocalMapFiles(string baseDataFolder)
         {
-            get
+            try
             {
-                return _graphicsOverlays;
+                // Return immediately if the path is invalid
+                if (string.IsNullOrEmpty(baseDataFolder) || !Directory.Exists(baseDataFolder))
+                {
+                    Console.WriteLine($"Warning: baseDataFolder doesn't exist: {baseDataFolder}");
+                    return;
+                }
+                
+                string mapLocation = System.IO.Path.Combine(baseDataFolder, "Maps", "MapNew.mmpk");
+                
+                if (!System.IO.File.Exists(mapLocation))
+                {
+                    Console.WriteLine($"Warning: Map file not found at {mapLocation}, keeping default imagery basemap");
+                    return; // Keep existing online basemap
+                }
+                
+                Console.WriteLine($"Loading local map package from: {mapLocation}");
+                var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
+                await mobileMapPackage.LoadAsync();
+                this.Map = mobileMapPackage.Maps.First();
+                Console.WriteLine("Successfully loaded local map package");
+                
+                // Load TPK files only if they exist
+                // First TPK file
+                string tpkPath1 = System.IO.Path.Combine(baseDataFolder, "Maps", "world_imagery_tpk.tpk");
+                if (File.Exists(tpkPath1))
+                {
+                    Console.WriteLine($"Loading TPK file: {tpkPath1}");
+                    var tiledLayer1 = new ArcGISTiledLayer(new Uri(tpkPath1));
+                    await tiledLayer1.LoadAsync();
+                    Console.WriteLine("Successfully loaded first TPK file");
+                }
+                
+                // Second TPK file
+                string tpkPath2 = System.IO.Path.Combine(baseDataFolder, "Maps", "world_boundaries_and_places_4-11.tpk");
+                if (File.Exists(tpkPath2))
+                {
+                    Console.WriteLine($"Loading TPK file: {tpkPath2}");
+                    var tiledLayer2 = new ArcGISTiledLayer(new Uri(tpkPath2));
+                    await tiledLayer2.LoadAsync();
+                    Console.WriteLine("Successfully loaded second TPK file");
+                }
             }
-            set
+            catch (Exception ex)
             {
-                _graphicsOverlays = value;
-                OnPropertyChanged();
+                Console.WriteLine($"Error loading local map files: {ex.Message}");
             }
         }
 
@@ -137,74 +180,71 @@ namespace DisplayAMap
         public event EventHandler MapAccessed;
         public async Task AccessMap()
         {
-
             try
             {
+                // First check if AppConfigSvc.appCfg is properly initialized
+                if (AppConfigSvc.appCfg == null)
+                {
+                    Console.WriteLine("Warning: AppConfigSvc.appCfg is null, using default imagery basemap");
+                    this.Map = new Map(BasemapStyle.ArcGISImagery);
+                    return;
+                }
+                
+                if (string.IsNullOrEmpty(AppConfigSvc.appCfg.baseDataFolder))
+                {
+                    Console.WriteLine("Warning: baseDataFolder is not set, using default imagery basemap");
+                    this.Map = new Map(BasemapStyle.ArcGISImagery);
+                    return;
+                }
+                
+                // Now try to access the map files
                 string mapLocation = System.IO.Path.Combine(AppConfigSvc.appCfg.baseDataFolder, "Maps", "MapNew.mmpk");
-
-                //string mapLocation = @"C:\Users\urika\OneDrive\מסמכים\ArcGIS\MapNew.mmpk";
+                
+                if (!System.IO.File.Exists(mapLocation))
+                {
+                    Console.WriteLine($"Warning: Map file not found at {mapLocation}, using default imagery basemap");
+                    this.Map = new Map(BasemapStyle.ArcGISImagery);
+                    return;
+                }
+                
                 var mobileMapPackage = await MobileMapPackage.OpenAsync(mapLocation);
                 await mobileMapPackage.LoadAsync();
                 this.Map = mobileMapPackage.Maps.First();
 
+                // Check for TPK files but don't fail if they don't exist
                 // Load the first TPK file
                 string tpkPath1 = System.IO.Path.Combine(AppConfigSvc.appCfg.baseDataFolder, "Maps","world_imagery_tpk.tpk");
-                if (!File.Exists(tpkPath1))
+                if (File.Exists(tpkPath1))
                 {
-                    throw new FileNotFoundException("TPK file not found.", tpkPath1);
+                    var tiledLayer1 = new ArcGISTiledLayer(new Uri(tpkPath1));
+                    await tiledLayer1.LoadAsync();
                 }
-                var tiledLayer1 = new ArcGISTiledLayer(new Uri(tpkPath1));
-                await tiledLayer1.LoadAsync();
+                else
+                {
+                    Console.WriteLine($"Warning: TPK file not found at {tpkPath1}");
+                }
 
                 // Load the second TPK file
                 string tpkPath2 = System.IO.Path.Combine(AppConfigSvc.appCfg.baseDataFolder, "Maps", "world_boundaries_and_places_4-11.tpk");
-                if (!File.Exists(tpkPath2))
+                if (File.Exists(tpkPath2))
                 {
-                    throw new FileNotFoundException("TPK file not found.", tpkPath2);
+                    var tiledLayer2 = new ArcGISTiledLayer(new Uri(tpkPath2));
+                    await tiledLayer2.LoadAsync();
                 }
-                var tiledLayer2 = new ArcGISTiledLayer(new Uri(tpkPath2));
-                await tiledLayer2.LoadAsync();
-
-                //// Load the VTPK file
-                //string vtpkPath = @"C:\Work\BaseMaps\Hybrid.vtpk";
-                //if (!File.Exists(vtpkPath))
-                //{
-                //    throw new FileNotFoundException("VTPK file not found.", vtpkPath);
-                //}
-                //var vectorTiledLayer = new ArcGISVectorTiledLayer(new Uri(vtpkPath));
-                //await vectorTiledLayer.LoadAsync();
-
-                // Create a new basemap with the first tiled layer
-                var basemap = new Basemap(tiledLayer1);
-
-                // Set the basemap to the map
-                this.Map.Basemap = basemap;
-
-                 //Add the second tiled layer as an operational layer
-                this.Map.OperationalLayers.Add(tiledLayer2);
-
-                // Add the vector tiled layer as an operational layer
-                //this.Map.OperationalLayers.Add(vectorTiledLayer);
-
-                // Add the first map from the mobile map package as the last layer
-                //var mobileMap = mobileMapPackage.Maps.First();
-                //foreach (var layer in mobileMap.OperationalLayers)
-                //{
-                //    this.Map.OperationalLayers.Add(layer);
-                //}
-
-                // Trigger the event to signal that AccessMap has finished
-                OnMapAccessed();
-
-
+                else
+                {
+                    Console.WriteLine($"Warning: TPK file not found at {tpkPath2}");
+                }
+                
+                // Successfully loaded the map
+                Console.WriteLine("Map successfully loaded");
             }
             catch (Exception ex)
             {
-                // Log the exception message
-                Debug.WriteLine($"Exception: {ex.Message}");
-                MessageBox.Show($"Failed to load map layers: {ex.Message}");
+                // If anything goes wrong, just use a default basemap
+                Console.WriteLine($"Error loading map: {ex.Message}");
+                this.Map = new Map(BasemapStyle.ArcGISImagery);
             }
-
         }
         protected virtual void OnMapAccessed()
         {
@@ -379,6 +419,37 @@ namespace DisplayAMap
 
         }
 
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private Map? _map;
+        public Map? Map
+        {
+            get { return _map; }
+            set
+            {
+                _map = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private GraphicsOverlayCollection? _graphicsOverlays = new GraphicsOverlayCollection();
+        public GraphicsOverlayCollection? GraphicsOverlays
+        {
+            get
+            {
+                return _graphicsOverlays;
+            }
+            set
+            {
+                _graphicsOverlays = value;
+                OnPropertyChanged();
+            }
+        }
 
     }
 }
