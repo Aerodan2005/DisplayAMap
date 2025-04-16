@@ -92,6 +92,7 @@ namespace DisplayAMap
         {
             try
             {
+                baseDataFolder = "C:\\Work\\dataroot\\dataroot";  // uri
                 // Return immediately if the path is invalid
                 if (string.IsNullOrEmpty(baseDataFolder) || !Directory.Exists(baseDataFolder))
                 {
@@ -103,8 +104,8 @@ namespace DisplayAMap
                 
                 if (!System.IO.File.Exists(mapLocation))
                 {
-                    Console.WriteLine($"Warning: Map file not found at {mapLocation}, keeping default imagery basemap");
-                    return; // Keep existing online basemap
+                    Console.WriteLine($"Warning: MapNew.mmpk not found at {mapLocation}");
+                    return;
                 }
                 
                 Console.WriteLine($"Loading local map package from: {mapLocation}");
@@ -138,6 +139,11 @@ namespace DisplayAMap
             {
                 Console.WriteLine($"Error loading local map files: {ex.Message}");
             }
+        }
+
+        public async Task TryLoadLocalMapFiles()
+        {
+            await TryLoadLocalMapFiles(BaseDataFolder);
         }
 
         private async Task SetupMap()
@@ -450,6 +456,8 @@ namespace DisplayAMap
                 OnPropertyChanged();
             }
         }
+
+        public string BaseDataFolder { get; } = @"C:\Work\dataroot\dataroot\";
 
     }
 }
