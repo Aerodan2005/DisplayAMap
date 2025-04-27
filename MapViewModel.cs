@@ -393,6 +393,11 @@ namespace DisplayAMap
             return polylineBuilder;
         }
 
+        public void ClearPolylineBuilder()
+        {
+            polylineBuilder = null;
+        }
+
         // Modified CreateGraphics to accept a Graphic parameter
         private void CreateGraphics(Graphic polylineGraphic)
         {
